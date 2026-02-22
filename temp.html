@@ -18,6 +18,7 @@
             --text-dim: #94a3b8;
             --danger: #ff4d4d;
             --success: #00ff88;
+            --warning: #ffb84d;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -33,6 +34,34 @@
 
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+
+        /* Header & Sidebar */
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 1.2rem; border-bottom: 1px solid var(--glass-border);
+            background: rgba(5, 6, 10, 0.9); backdrop-filter: blur(10px); z-index: 1000;
+        }
+        .menu-btn { font-size: 1.5rem; color: var(--accent); cursor: pointer; background: none; border: none; }
+        
+        .sidebar-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 4000;
+            display: none; opacity: 0; transition: opacity 0.3s ease;
+        }
+        .sidebar {
+            position: fixed; top: 0; left: -280px; width: 280px; height: 100%;
+            background: rgba(10, 12, 20, 0.95); backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border); z-index: 4001;
+            transition: left 0.3s ease; display: flex; flex-direction: column; padding: 2rem 1rem;
+        }
+        .sidebar.open { left: 0; }
+        .sidebar-overlay.active { display: block; opacity: 1; }
+        .sidebar-close { position: absolute; top: 15px; right: 15px; font-size: 1.5rem; color: var(--text-dim); cursor: pointer; }
+        .sidebar-link {
+            padding: 15px; color: var(--text); text-decoration: none; font-size: 1.1rem;
+            border-bottom: 1px solid var(--glass-border); display: flex; align-items: center; gap: 15px; cursor: pointer;
+        }
+        .sidebar-link:hover, .sidebar-link.active { color: var(--accent); }
+        .sidebar-footer { margin-top: auto; text-align: center; color: var(--text-dim); font-size: 0.8rem; }
 
         main { flex: 1; padding: 1.2rem; overflow-y: auto; padding-bottom: 100px; }
         .view { display: none; animation: fadeIn 0.4s ease; max-width: 600px; margin: 0 auto; }
@@ -53,8 +82,15 @@
         .glass-card {
             background: var(--glass); border: 1px solid var(--glass-border);
             border-radius: 20px; padding: 1.2rem; margin-bottom: 1rem;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px); position: relative; overflow: hidden;
         }
+
+        .input-group { margin-bottom: 15px; }
+        .input-field {
+            width: 100%; background: #000; border: 1px solid var(--glass-border);
+            color: #fff; padding: 12px; border-radius: 10px; outline: none; transition: 0.3s;
+        }
+        .input-field:focus { border-color: var(--accent); }
 
         .btn {
             background: rgba(0, 240, 255, 0.1); border: 1px solid var(--accent); color: var(--accent);
@@ -62,7 +98,9 @@
             transition: 0.3s; display: inline-flex; align-items: center; gap: 8px; justify-content: center;
         }
         .btn:active { transform: scale(0.95); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: var(--text-dim); color: var(--text-dim); background: transparent; }
         .btn-primary { background: var(--accent); color: #000; }
+        .btn-success { background: rgba(0, 255, 136, 0.1); border-color: var(--success); color: var(--success); }
         .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; }
 
         .email-display {
@@ -71,6 +109,7 @@
             justify-content: space-between; font-family: monospace;
         }
 
+        /* Call Modal UI */
         #call-modal {
             position: fixed; inset: 0; background: rgba(0,0,0,0.95);
             z-index: 2000; display: none; flex-direction: column;
@@ -92,19 +131,60 @@
         .video-grid { width: 100%; display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
         @media(min-width: 400px) { .video-grid { grid-template-columns: 1fr 1fr; } }
 
+        /* Testing Lab Specifics */
+        .step-hidden { display: none; animation: fadeIn 0.3s ease; }
+        .countdown { font-size: 0.8rem; color: var(--warning); margin-left: 10px; }
+        .test-inbox-item { background: #000; border-left: 3px solid var(--accent); padding: 10px; margin-top: 10px; border-radius: 5px; font-family: monospace; font-size: 0.85rem;}
+        
         .signature { font-family: 'Brush Script MT', cursive; font-size: 2rem; color: var(--accent); margin: 15px 0; }
         .policy-text { font-size: 0.75rem; color: var(--text-dim); text-align: left; height: 150px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; line-height: 1.4; }
 
         #toast {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
             background: var(--accent); color: #000; padding: 10px 20px;
-            border-radius: 50px; font-weight: bold; z-index: 3000; display: none;
+            border-radius: 50px; font-weight: bold; z-index: 5000; display: none;
+            box-shadow: 0 4px 15px rgba(0, 240, 255, 0.3); transition: all 0.3s ease;
         }
+        .spinner { animation: spin 1s linear infinite; display: inline-block; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-    <div id="toast">Copied!</div>
+    <div id="toast">Message</div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="UI.toggleSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+        <i class="fas fa-times sidebar-close" onclick="UI.toggleSidebar()"></i>
+        <h2 style="color: var(--accent); margin-bottom: 30px; padding-left: 15px;">NEXUS PRO</h2>
+        
+        <div class="sidebar-link" onclick="App.switch('mail-view'); UI.toggleSidebar();">
+            <i class="fas fa-envelope"></i> Temp Mail
+        </div>
+        <div class="sidebar-link" onclick="App.switch('call-view'); UI.toggleSidebar();">
+            <i class="fas fa-phone-alt"></i> P2P Call
+        </div>
+        <div class="sidebar-link" onclick="App.switch('testing-view'); UI.toggleSidebar();">
+            <i class="fas fa-flask"></i> Testing Lab
+        </div>
+        <div class="sidebar-link" onclick="App.switch('history-view'); UI.toggleSidebar();">
+            <i class="fas fa-shield-alt"></i> Policy
+        </div>
+
+        <div class="sidebar-footer">
+            <p><i class="fas fa-info-circle"></i> Version 2.0.4 PRO</p>
+            <p style="margin-top: 5px;"><i class="fas fa-headset"></i> riyazo65ckm@gmail.com</p>
+            <div class="signature" style="font-size: 1.5rem;">Umaiz Sufiyan</div>
+        </div>
+    </div>
+
+    <header>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <button class="menu-btn" onclick="UI.toggleSidebar()"><i class="fas fa-bars"></i></button>
+            <h2 style="font-size: 1.2rem; font-weight: 600;">NEXUS <span style="color: var(--accent);">PRO</span></h2>
+        </div>
+        <i class="fas fa-bolt" style="color: var(--accent);"></i>
+    </header>
 
     <div id="call-modal">
         <div id="call-incoming-ui">
@@ -139,7 +219,7 @@
                 </div>
                 <div class="email-display">
                     <span id="email-addr" style="font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis;">No active session...</span>
-                    <i class="fas fa-copy" onclick="App.copy('email-addr')" style="color: var(--accent); padding-left: 10px;"></i>
+                    <i class="fas fa-copy" onclick="UI.copyText('email-addr')" style="color: var(--accent); padding-left: 10px; cursor: pointer;"></i>
                 </div>
             </div>
             <div id="email-list">
@@ -153,14 +233,72 @@
                 <label style="font-size: 0.7rem; color: var(--text-dim);">YOUR UNIQUE ID</label>
                 <div class="email-display" style="margin-top: 5px;">
                     <span id="my-id">Generating...</span>
-                    <i class="fas fa-copy" onclick="App.copy('my-id')" style="color: var(--accent);"></i>
+                    <i class="fas fa-copy" onclick="UI.copyText('my-id')" style="color: var(--accent); cursor: pointer;"></i>
                 </div>
             </div>
             <div class="glass-card">
-                <input type="text" id="remote-id" placeholder="Paste Destination ID..." style="width:100%; background: #000; border:1px solid var(--glass-border); color:#fff; padding:12px; border-radius:10px; margin-bottom:12px; outline:none;">
+                <input type="text" id="remote-id" class="input-field" placeholder="Paste Destination ID..." style="margin-bottom:12px;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <button class="btn btn-primary" onclick="Calls.dial(true)"><i class="fas fa-video"></i> Video</button>
                     <button class="btn" onclick="Calls.dial(false)"><i class="fas fa-microphone"></i> Audio</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="testing-view" class="view">
+            <h1 style="font-size: 1.4rem; margin-bottom: 1rem;">Testing Lab <span style="font-size: 0.8rem; color: var(--warning);">(Simulated)</span></h1>
+            
+            <div class="glass-card">
+                <h3 style="font-size: 1rem; margin-bottom: 10px;"><i class="fas fa-envelope-open-text" style="color: var(--accent);"></i> Email Tester</h3>
+                <div class="input-group">
+                    <input type="email" id="test-email-input" class="input-field" placeholder="Enter Email Address">
+                </div>
+                <button class="btn btn-primary" id="btn-send-email" onclick="Testing.sendOTP('email')" style="width: 100%;">
+                    <span>Send Test Code</span>
+                </button>
+
+                <div id="verify-email-step" class="step-hidden" style="margin-top: 15px; border-top: 1px solid var(--glass-border); padding-top: 15px;">
+                    <div class="input-group">
+                        <input type="text" id="test-email-code" class="input-field" placeholder="Enter 6-digit code" maxlength="6">
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-success" onclick="Testing.verifyOTP('email')" style="flex: 1;">Verify Code</button>
+                        <button class="btn" id="btn-resend-email" onclick="Testing.sendOTP('email')" disabled>
+                            <i class="fas fa-redo"></i> <span id="email-timer" class="countdown">60s</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <h3 style="font-size: 1rem; margin-bottom: 10px;"><i class="fas fa-sms" style="color: var(--accent-purple);"></i> Mobile Tester</h3>
+                <div class="input-group">
+                    <input type="tel" id="test-phone-input" class="input-field" placeholder="Enter Mobile Number">
+                </div>
+                <button class="btn" id="btn-send-phone" onclick="Testing.sendOTP('phone')" style="width: 100%; border-color: var(--accent-purple); color: var(--accent-purple);">
+                    <span>Send Test OTP</span>
+                </button>
+
+                <div id="verify-phone-step" class="step-hidden" style="margin-top: 15px; border-top: 1px solid var(--glass-border); padding-top: 15px;">
+                    <div class="input-group">
+                        <input type="text" id="test-phone-code" class="input-field" placeholder="Enter OTP" maxlength="6">
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-success" onclick="Testing.verifyOTP('phone')" style="flex: 1;">Verify OTP</button>
+                        <button class="btn" id="btn-resend-phone" onclick="Testing.sendOTP('phone')" disabled style="border-color: var(--text-dim); color: var(--text-dim);">
+                            <i class="fas fa-redo"></i> <span id="phone-timer" class="countdown">60s</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <h3 style="font-size: 0.9rem; margin-bottom: 10px; display: flex; justify-content: space-between;">
+                    <span><i class="fas fa-bug"></i> Debug Device Inbox</span>
+                    <button class="btn btn-sm" onclick="Testing.clearInbox()"><i class="fas fa-trash"></i></button>
+                </h3>
+                <div id="debug-inbox-list" style="max-height: 150px; overflow-y: auto;">
+                    <p style="text-align: center; color: var(--text-dim); font-size: 0.8rem; padding: 10px;">No simulated messages yet.</p>
                 </div>
             </div>
         </section>
@@ -176,8 +314,9 @@
                     1. Information We Collect: Temporary inbox IDs, PeerJS call IDs. We do NOT collect real names or emails.<br>
                     2. Temporary Email: Data is ephemeral and deleted after session closure.<br>
                     3. Call Data: Voice/Video calls use P2P WebRTC. We do not store audio/video on servers.<br>
-                    4. Third Parties: MailSlurp (Email), PeerJS (Comms).<br>
-                    5. Security: Not for sensitive banking or permanent accounts.<br><br>
+                    4. Testing Lab: OTPs are generated client-side and stored securely in local browser storage. No real SMS/Emails are dispatched.<br>
+                    5. Third Parties: MailSlurp (Email), PeerJS (Comms).<br>
+                    6. Security: Not for sensitive banking or permanent accounts.<br><br>
                     Contact: riyazo65ckm@gmail.com
                 </div>
             </div>
@@ -185,7 +324,7 @@
             <div class="glass-card" style="text-align: center;">
                 <p style="font-size: 0.7rem; color: var(--text-dim);">VERSION 2.0.4 PRO</p>
                 <div class="signature">Umaiz Sufiyan</div>
-                <button class="btn btn-sm" style="border-color: var(--danger); color: var(--danger);" onclick="App.clear()">Wipe Data</button>
+                <button class="btn btn-sm" style="border-color: var(--danger); color: var(--danger);" onclick="App.clear()">Wipe App Data</button>
             </div>
         </section>
     </main>
@@ -193,13 +332,36 @@
     <nav class="mobile-nav">
         <div class="nav-item active" onclick="App.switch('mail-view', this)"><i class="fas fa-envelope"></i><span>Mail</span></div>
         <div class="nav-item" onclick="App.switch('call-view', this)"><i class="fas fa-phone-alt"></i><span>Call</span></div>
-        <div class="nav-item" onclick="App.switch('history-view', this)"><i class="fas fa-user-shield"></i><span>Policy</span></div>
+        <div class="nav-item" onclick="App.switch('testing-view', this)"><i class="fas fa-flask"></i><span>Test Lab</span></div>
     </nav>
 
     <script>
         const API_KEY = "sk_FllbN62B80svK5hF_waWY0lEYgzVGd2EHeVU70ksxQ7kbSeJe7obqeGMuzlJuxM9va47TR0pL7wJNiOGC";
         
-        // Tone.js Sounds
+        // --- UI & Utilities ---
+        const UI = {
+            toggleSidebar() {
+                document.getElementById('sidebar').classList.toggle('open');
+                document.getElementById('sidebarOverlay').classList.toggle('active');
+            },
+            showToast(msg, type = 'success') {
+                const t = document.getElementById('toast');
+                t.innerText = msg;
+                t.style.background = type === 'success' ? 'var(--success)' : (type === 'error' ? 'var(--danger)' : 'var(--accent)');
+                t.style.color = '#000';
+                t.style.display = 'block';
+                setTimeout(() => { t.style.opacity = '0'; setTimeout(() => { t.style.display = 'none'; t.style.opacity = '1'; }, 300); }, 2500);
+            },
+            copyText(id) {
+                const el = document.getElementById(id);
+                if(el) {
+                    navigator.clipboard.writeText(el.innerText);
+                    this.showToast('Copied to clipboard!');
+                }
+            }
+        };
+
+        // --- Tone.js Sounds ---
         const Sounds = {
             init() { Tone.start(); },
             playRing() {
@@ -209,16 +371,13 @@
                 }, "1n").start(0);
                 Tone.Transport.start();
             },
-            playAlert() {
-                const synth = new Tone.MembraneSynth().toDestination();
-                synth.triggerAttackRelease("G2", "4n");
-            },
             stop() {
                 Tone.Transport.stop();
                 if(this.loop) this.loop.stop();
             }
         };
 
+        // --- Main App Logic (Temp Mail) ---
         const App = {
             inbox: null,
             init() {
@@ -226,13 +385,21 @@
                 if(saved) this.loadInbox(saved.id, saved.email);
             },
             async createInbox() {
-                const res = await fetch('https://api.mailslurp.com/inboxes', {
-                    method: 'POST',
-                    headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' }
-                });
-                const data = await res.json();
-                this.loadInbox(data.id, data.emailAddress);
-                this.log('inbox', data.emailAddress);
+                try {
+                    UI.showToast('Generating Secure Inbox...', 'info');
+                    const res = await fetch('https://api.mailslurp.com/inboxes', {
+                        method: 'POST',
+                        headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' }
+                    });
+                    const data = await res.json();
+                    if(data.id) {
+                        this.loadInbox(data.id, data.emailAddress);
+                        this.log('inbox', data.emailAddress);
+                        UI.showToast('Inbox Created!');
+                    } else {
+                        UI.showToast('API Limit Reached', 'error');
+                    }
+                } catch(e) { UI.showToast('Network Error', 'error'); }
             },
             loadInbox(id, email) {
                 this.inbox = { id, email };
@@ -244,25 +411,29 @@
                 if(window.nxPoll) clearInterval(window.nxPoll);
                 window.nxPoll = setInterval(async () => {
                     if(!this.inbox) return;
-                    const res = await fetch(`https://api.mailslurp.com/inboxes/${this.inbox.id}/emails`, {
-                        headers: { 'x-api-key': API_KEY }
-                    });
-                    const emails = await res.json();
-                    this.render(emails);
+                    try {
+                        const res = await fetch(`https://api.mailslurp.com/inboxes/${this.inbox.id}/emails`, {
+                            headers: { 'x-api-key': API_KEY }
+                        });
+                        const emails = await res.json();
+                        this.render(emails);
+                    } catch(e){}
                 }, 5000);
             },
             async render(emails) {
                 const list = document.getElementById('email-list');
-                if(!emails.length) return;
+                if(!emails || !emails.length) return;
                 let html = '';
                 for(let em of emails) {
-                    const full = await (await fetch(`https://api.mailslurp.com/emails/${em.id}`, { headers: { 'x-api-key': API_KEY }})).json();
-                    const otp = full.body.match(/\b\d{4,8}\b/);
-                    html += `<div class="glass-card">
-                        <small>${new Date(em.createdAt).toLocaleTimeString()}</small>
-                        <p><strong>${em.subject}</strong></p>
-                        ${otp ? `<div class="email-display" style="margin-top:10px"><span>Code: ${otp[0]}</span><i class="fas fa-copy" onclick="navigator.clipboard.writeText('${otp[0]}')"></i></div>` : ''}
-                    </div>`;
+                    try {
+                        const full = await (await fetch(`https://api.mailslurp.com/emails/${em.id}`, { headers: { 'x-api-key': API_KEY }})).json();
+                        const otp = full.body ? full.body.match(/\b\d{4,8}\b/) : null;
+                        html += `<div class="glass-card">
+                            <small style="color:var(--text-dim);">${new Date(em.createdAt).toLocaleTimeString()}</small>
+                            <p style="margin-top:5px;"><strong>${em.subject || 'No Subject'}</strong></p>
+                            ${otp ? `<div class="email-display" style="margin-top:10px"><span>Code: ${otp[0]}</span><i class="fas fa-copy" style="cursor:pointer;" onclick="navigator.clipboard.writeText('${otp[0]}'); UI.showToast('Copied!')"></i></div>` : ''}
+                        </div>`;
+                    } catch(e){}
                 }
                 list.innerHTML = html;
             },
@@ -271,25 +442,30 @@
                 h.unshift({type, val, time: Date.now()});
                 localStorage.setItem('nx_v2_hist', JSON.stringify(h.slice(0,10)));
             },
-            copy(id) {
-                navigator.clipboard.writeText(document.getElementById(id).innerText);
-                const t = document.getElementById('toast');
-                t.style.display = 'block'; setTimeout(()=>t.style.display='none',2000);
-            },
-            switch(view, el) {
-                document.querySelectorAll('.view, .nav-item').forEach(x => x.classList.remove('active'));
-                document.getElementById(view).classList.add('active');
-                el.classList.add('active');
+            switch(viewId, navEl = null) {
+                document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+                document.getElementById(viewId).classList.add('active');
+                if(navEl) {
+                    document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+                    navEl.classList.add('active');
+                } else {
+                    // map viewId to nav items to keep sync
+                    document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+                    if(viewId==='mail-view') document.querySelectorAll('.nav-item')[0].classList.add('active');
+                    if(viewId==='call-view') document.querySelectorAll('.nav-item')[1].classList.add('active');
+                    if(viewId==='testing-view') document.querySelectorAll('.nav-item')[2].classList.add('active');
+                }
             },
             clear() { localStorage.clear(); location.reload(); }
         };
 
+        // --- WebRTC Calling Logic (Fixed) ---
         const Calls = {
             peer: null,
             localStream: null,
             currentCall: null,
             init() {
-                this.peer = new Peer('nexus-pro-' + Math.floor(Math.random()*10000));
+                this.peer = new Peer('nx-pro-' + Math.floor(Math.random()*100000));
                 this.peer.on('open', id => document.getElementById('my-id').innerText = id);
                 this.peer.on('call', call => {
                     Sounds.playRing();
@@ -301,14 +477,14 @@
             },
             async dial(video) {
                 Sounds.init();
-                const rid = document.getElementById('remote-id').value;
-                if(!rid) return;
+                const rid = document.getElementById('remote-id').value.trim();
+                if(!rid) return UI.showToast('Enter a Destination ID', 'error');
                 try {
                     this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: video });
                     document.getElementById('localVideo').srcObject = this.localStream;
                     const call = this.peer.call(rid, this.localStream);
                     this.setupCall(call);
-                } catch(e) { alert("Mic/Cam Access Denied"); }
+                } catch(e) { UI.showToast("Mic/Cam Access Denied", "error"); }
             },
             async answer(video) {
                 Sounds.stop();
@@ -317,7 +493,7 @@
                     document.getElementById('localVideo').srcObject = this.localStream;
                     this.currentCall.answer(this.localStream);
                     this.setupCall(this.currentCall);
-                } catch(e) { alert("Mic/Cam Access Denied"); }
+                } catch(e) { UI.showToast("Mic/Cam Access Denied", "error"); }
             },
             setupCall(call) {
                 this.currentCall = call;
@@ -325,20 +501,31 @@
                 document.getElementById('call-active-ui').style.display = 'block';
                 document.getElementById('call-modal').style.display = 'flex';
                 
-                call.on('stream', remote => {
-                    document.getElementById('remoteVideo').srcObject = remote;
+                call.on('stream', remoteStream => {
+                    const remoteVid = document.getElementById('remoteVideo');
+                    if(remoteVid.srcObject !== remoteStream) {
+                        remoteVid.srcObject = remoteStream;
+                    }
                 });
                 call.on('close', () => this.hangup());
+                call.peerConnection.oniceconnectionstatechange = () => {
+                    if(call.peerConnection.iceConnectionState === 'disconnected') this.hangup();
+                };
             },
             async shareScreen() {
                 try {
                     const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
                     const videoTrack = screenStream.getVideoTracks()[0];
                     const sender = this.currentCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
-                    sender.replaceTrack(videoTrack);
+                    
+                    if(sender) sender.replaceTrack(videoTrack);
                     document.getElementById('localVideo').srcObject = screenStream;
+                    
                     videoTrack.onended = () => {
-                        // Switch back to camera if needed
+                        if(sender && this.localStream) {
+                            sender.replaceTrack(this.localStream.getVideoTracks()[0]);
+                            document.getElementById('localVideo').srcObject = this.localStream;
+                        }
                     };
                 } catch(e) { console.log("Screen share cancelled"); }
             },
@@ -347,12 +534,132 @@
                 if(this.localStream) this.localStream.getTracks().forEach(t => t.stop());
                 if(this.currentCall) this.currentCall.close();
                 document.getElementById('call-modal').style.display = 'none';
-                location.reload();
+                document.getElementById('remoteVideo').srcObject = null;
+                document.getElementById('localVideo').srcObject = null;
             }
         };
 
-        App.init();
-        Calls.init();
+        // --- Testing Lab Logic ---
+        const Testing = {
+            intervals: { email: null, phone: null },
+            
+            init() { this.loadInboxUI(); },
+
+            generateOTP() { return Math.floor(100000 + Math.random() * 900000).toString(); },
+
+            sendOTP(type) {
+                const inputId = type === 'email' ? 'test-email-input' : 'test-phone-input';
+                const target = document.getElementById(inputId).value.trim();
+                const btn = document.getElementById(`btn-send-${type}`);
+                
+                if(!target) return UI.showToast(`Enter valid ${type}`, 'error');
+                if(type === 'email' && !target.includes('@')) return UI.showToast('Invalid Email', 'error');
+
+                // UI Loading State
+                const originalText = btn.innerHTML;
+                btn.innerHTML = `<i class="fas fa-circle-notch spinner"></i> Sending...`;
+                btn.disabled = true;
+
+                setTimeout(() => {
+                    const otp = this.generateOTP();
+                    const expiry = Date.now() + (5 * 60 * 1000); // 5 mins
+                    
+                    localStorage.setItem(`nx_test_${type}_otp`, JSON.stringify({ code: otp, expiry }));
+                    
+                    console.log(`[Simulation Mode] ${type.toUpperCase()} OTP:`, otp);
+                    this.addToDebugInbox(type, target, otp);
+
+                    btn.innerHTML = originalText;
+                    btn.style.display = 'none';
+                    document.getElementById(`verify-${type}-step`).style.display = 'block';
+                    
+                    UI.showToast(`Verification code sent to ${target}`);
+                    this.startCountdown(type);
+                }, 1500); // Simulate network delay
+            },
+
+            verifyOTP(type) {
+                const entered = document.getElementById(`test-${type}-code`).value.trim();
+                const storedData = JSON.parse(localStorage.getItem(`nx_test_${type}_otp`));
+
+                if(!entered) return UI.showToast('Enter code', 'error');
+                if(!storedData) return UI.showToast('No active OTP found', 'error');
+                if(Date.now() > storedData.expiry) return UI.showToast('OTP Expired', 'error');
+
+                if(entered === storedData.code) {
+                    UI.showToast(`${type === 'email' ? 'Email' : 'Mobile number'} is working ✅`, 'success');
+                    localStorage.removeItem(`nx_test_${type}_otp`);
+                    document.getElementById(`verify-${type}-step`).innerHTML = `<div style="text-align:center; color:var(--success); padding: 10px; font-weight:bold;"><i class="fas fa-check-circle"></i> Verified Successfully</div>`;
+                } else {
+                    UI.showToast('Invalid Code ❌', 'error');
+                }
+            },
+
+            startCountdown(type) {
+                let timeLeft = 60;
+                const timerEl = document.getElementById(`${type}-timer`);
+                const resendBtn = document.getElementById(`btn-resend-${type}`);
+                
+                resendBtn.disabled = true;
+                resendBtn.style.borderColor = 'var(--text-dim)';
+                resendBtn.style.color = 'var(--text-dim)';
+
+                if(this.intervals[type]) clearInterval(this.intervals[type]);
+                
+                this.intervals[type] = setInterval(() => {
+                    timeLeft--;
+                    timerEl.innerText = `${timeLeft}s`;
+                    if(timeLeft <= 0) {
+                        clearInterval(this.intervals[type]);
+                        timerEl.innerText = '';
+                        resendBtn.disabled = false;
+                        resendBtn.style.borderColor = type==='email' ? 'var(--accent)' : 'var(--accent-purple)';
+                        resendBtn.style.color = type==='email' ? 'var(--accent)' : 'var(--accent-purple)';
+                    }
+                }, 1000);
+            },
+
+            addToDebugInbox(type, target, code) {
+                const msgs = JSON.parse(localStorage.getItem('nx_test_inbox') || '[]');
+                msgs.unshift({ type, target, code, time: new Date().toLocaleTimeString() });
+                localStorage.setItem('nx_test_inbox', JSON.stringify(msgs.slice(0, 10)));
+                this.loadInboxUI();
+            },
+
+            loadInboxUI() {
+                const msgs = JSON.parse(localStorage.getItem('nx_test_inbox') || '[]');
+                const list = document.getElementById('debug-inbox-list');
+                if(!msgs.length) {
+                    list.innerHTML = `<p style="text-align: center; color: var(--text-dim); font-size: 0.8rem; padding: 10px;">No simulated messages yet.</p>`;
+                    return;
+                }
+                
+                list.innerHTML = msgs.map(m => `
+                    <div class="test-inbox-item" style="border-left-color: ${m.type === 'email' ? 'var(--accent)' : 'var(--accent-purple)'}">
+                        <div style="display:flex; justify-content:space-between; color:var(--text-dim); font-size:0.7rem;">
+                            <span><i class="${m.type==='email' ? 'fas fa-envelope' : 'fas fa-sms'}"></i> To: ${m.target}</span>
+                            <span>${m.time}</span>
+                        </div>
+                        <div style="margin-top:5px; font-size:0.9rem;">
+                            Verification Code: <strong style="color:var(--text); letter-spacing:2px;">${m.code}</strong>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            clearInbox() {
+                localStorage.removeItem('nx_test_inbox');
+                this.loadInboxUI();
+                UI.showToast('Debug inbox cleared');
+            }
+        };
+
+        // Initialize All Modules
+        window.onload = () => {
+            App.init();
+            Calls.init();
+            Testing.init();
+        };
     </script>
 </body>
 </html>
